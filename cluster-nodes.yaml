@@ -1,0 +1,68 @@
+heat_template_version: 2021-04-16
+parameters: 
+  clustername:
+    type: string
+    label: Cluster Name
+    description: The name to give the cluster
+
+  sitename:
+    type: string
+    label: Site Name
+    description: The name to give the site
+
+  site-network:
+    type: string
+    label: Cluster network resource ID
+
+  site-network-pri:
+    type: string
+    label: Cluster network pri ID
+
+  site-sg:
+    type: string
+    label: Cluster network security group ID
+
+  solo-image:
+    type: string
+    label: Flight Solo Image ID
+
+  node-flavour:
+    type: string
+    label: Node flavour
+
+  login-pri-ip:
+    type: string
+    label: IP of the Gateway Node
+
+  ssh-key:
+    type: string
+    label: SSH Key for Access
+
+  count:
+    type: number
+    label: Number of Nodes
+
+  subnet-count:
+    type: number
+    label: Subnet count for IP range (e.g. 1 to make nodes in 10.100.1.0/24 subnet)
+
+resources:
+  node-group:
+    type: OS::Heat::ResourceGroup
+    properties:
+      count: { get_param: count }
+      resource_def:
+        type: compute-node.yaml
+        properties:
+          clustername: { get_param: clustername }
+          sitename: { get_param: sitename }
+          site-network: { get_param: site-network }
+          site-network-pri: { get_param: site-network-pri }
+          site-sg: { get_param: site-sg }
+          solo-image: { get_param: solo-image }
+          node-flavour: { get_param: node-flavour }
+          login-pri-ip: { get_param: login-pri-ip }
+          ssh-key: { get_param: ssh-key }
+          subnet-count: { get_param: subnet-count }
+          index: '%index%'
+

@@ -1,0 +1,167 @@
+heat_template_version: 2021-04-16
+parameters:
+  sitename:
+    type: string
+    label: Site Name
+    description: The site name
+
+  external-network:
+    type: string
+    label: External Network Name
+    description: The name of the external network to bridge network to
+
+  network-cidr-pri:
+    type: string
+    label: Primary Nework CIDR
+    description: Network CIDR to be used for primary network
+
+  ssh-key:
+    type: string
+    label: SSH Key for Access
+
+  solo-image:
+    type: string
+    label: Flight Solo Image ID
+
+  controller-pri-ip:
+    type: string
+    label: Gateway Primary IP Address
+
+  controller-flavour:
+    type: string
+    label: Gateway node flavour
+
+resources:
+  external-route:
+    type: OS::Neutron::Router
+    depends_on: site-network-pri
+    properties:
+      name: { list_join: ['-', [ {get_param: sitename}, 'ext-route']] }
+      external_gateway_info:
+        network: { get_param: external-network }
+
+  external-route-iface:
+    type: OS::Neutron::RouterInterface
+    properties:
+      router: { get_resource: external-route }
+      subnet: { get_resource: site-network-pri }
+
+  site-network:
+    type: OS::Neutron::Net
+    properties:
+      name: { list_join: ['-', [{ get_param: sitename }, 'network']] }
+      dns_domain: { list_join: ['.', [{ get_param: sitename }, 'alces.network.']] }
+
+  site-network-pri:
+    type: OS::Neutron::Subnet
+    properties:
+      name: { list_join: ['-', [ {get_param: sitename}, 'network-pri']] }
+      network: { get_resource: site-network }
+      cidr: { get_param: network-cidr-pri }
+      ip_version: 4
+
+  site-sg:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      name: { list_join: ['-', [ {get_param: sitename}, 'network-pri-sg']] }
+      rules:
+        - direction: egress
+          remote_ip_prefix: 0.0.0.0/0
+        - direction: ingress
+          remote_ip_prefix: { get_param: network-cidr-pri }
+        - direction: ingress
+          protocol: icmp
+          remote_ip_prefix: 0.0.0.0/0
+        - direction: ingress
+          port_range_min: 22
+          port_range_max: 22
+          protocol: tcp
+          remote_ip_prefix: 0.0.0.0/0
+        - direction: ingress
+          port_range_min: 80
+          port_range_max: 80
+          protocol: tcp
+          remote_ip_prefix: 0.0.0.0/0
+        - direction: ingress
+          port_range_min: 443
+          port_range_max: 443
+          protocol: tcp
+          remote_ip_prefix: 0.0.0.0/0
+        - direction: ingress
+          port_range_min: 5901
+          port_range_max: 5911
+          protocol: tcp
+          remote_ip_prefix: 0.0.0.0/0
+        - direction: ingress
+          port_range_min: 8888
+          port_range_max: 8888
+          protocol: tcp
+          remote_ip_prefix: 0.0.0.0/0
+        - direction: ingress
+          port_range_min: 8888
+          port_range_max: 8888
+          protocol: udp
+          remote_ip_prefix: 0.0.0.0/0
+
+  controller-pri-port:
+    type: OS::Neutron::Port
+    depends_on: site-network-pri
+    properties:
+      name: { list_join: ['-', ['controller1', 'pri', { get_param: sitename }]] }
+      network: { get_resource: site-network }
+      security_groups:
+        - { get_resource: site-sg }
+      fixed_ips:
+        - subnet: { get_resource: site-network-pri }
+          ip_address: { get_param: controller-pri-ip }
+
+  controller-node:
+    type: OS::Nova::Server
+    properties:
+      name: { list_join: ['.', ['controller1', { get_param: sitename }, 'alces.network']] }
+      flavor: { get_param: controller-flavour } 
+      admin_user: flight
+      networks:
+          - port: { get_resource: controller-pri-port } 
+      block_device_mapping_v2:
+        - volume_id: { get_resource: controller-vol }
+          boot_index: 0
+      user_data_format: RAW
+      user_data:
+        str_replace:
+          template: |
+            #cloud-config
+            fqdn: controller1.$sitename.alces.network
+            users:
+              - default
+              - name: flight
+                sudo: ALL=(ALL) NOPASSWD:ALL
+                ssh-authorized-keys:
+                  - $key
+            write_files:
+              - content: |
+                  SHAREPUBKEY=true
+                  AUTOPARSEMATCH=$clustername
+                path: /opt/flight/cloudinit.in
+                permissions: '0644'
+                owner: root:root
+          params:
+            $key: { get_param: ssh-key }
+            $sitename: { get_param: sitename }
+
+  controller-vol:
+    type: OS::Cinder::Volume
+    properties:
+      image: { get_param: solo-image }
+      size: 16
+
+  controller-ip:
+     type: "OS::Neutron::FloatingIP"
+     properties:
+        floating_network_id: {get_param: external-network}
+        port_id: {get_resource: controller-pri-port}
+
+outputs:
+  controller_ext_ip:
+    description: Controller External IP
+    value:  { get_attr: [controller-ip, floating_ip_address] }

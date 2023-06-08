@@ -1,0 +1,127 @@
+heat_template_version: 2021-04-16
+parameters:
+  clustername:
+    type: string
+    label: Cluster Name
+    description: The name to give the cluster
+
+  sitename:
+    type: string
+    label: Site Name
+    description: Name of the site
+
+  site-network:
+    type: string
+    label: Cluster network resource ID
+
+  site-network-pri:
+    type: string
+    label: Cluster network pri ID
+
+  site-sg:
+    type: string
+    label: Cluster network security group ID
+
+  solo-image:
+    type: string
+    label: Flight Solo Image ID
+
+  node-flavour:
+    type: string
+    label: Node flavour
+
+  login-pri-ip:
+    type: string
+    label: IP of the Gateway Node
+
+  ssh-key:
+    type: string
+    label: SSH Key for Access
+
+  subnet-count:
+    type: string
+    label: Subnet count for IP range
+
+  index:
+    type: number
+    label: Index for naming
+
+resources:
+  node-number:
+    type: OS::Heat::Value
+    properties:
+      type: string
+      value:
+        yaql:
+          expression: str(int($.data.index) + int($.data.bump))
+          data:
+            index: { get_param: index }
+            bump: 1
+
+  node-pad:
+    type: OS::Heat::Value
+    properties:
+      type: string
+      value:
+        yaql:
+          expression: concat(str(int(int($.data.padding) - int(len(str($.data.num)))) * "0"), str($.data.num))
+          data:
+            num: { get_attr: [node-number, value] }
+            padding: 2
+
+  node-pri-port:
+    type: OS::Neutron::Port
+    depends_on: node-number
+    properties:
+      name: { list_join: ['-', ['node', { get_attr: [ node-pad, value ] }, 'pri', { get_param: clustername }]] }
+      network: { get_param: site-network }
+      security_groups:
+        - { get_param: site-sg }
+      fixed_ips:
+        - subnet: { get_param: site-network-pri }
+          ip_address: { list_join: ['.', [ '10.100', { get_param: subnet-count }, { get_attr: [ node-number, value ] } ]] }
+
+  node:
+    type: OS::Nova::Server
+    properties:
+      name: { list_join: ['.', [ { list_join: [ '', ['node', {get_attr: [node-pad, value]} ]]}, { get_param: clustername }, 'alces.network']] }
+      flavor: { get_param: node-flavour }
+      image: { get_param: solo-image }
+      admin_user: flight
+      networks:
+          - port: { get_resource: node-pri-port }
+      user_data_format: RAW
+      user_data:
+        str_replace:
+          template: |
+            #cloud-config
+            fqdn: node$pad.$clustername.$sitename.alces.network
+            users:
+              - default
+              - name: flight
+                sudo: ALL=(ALL) NOPASSWD:ALL
+                ssh-authorized-keys:
+                  - $key
+            write_files:
+              - content: |
+                  SERVER=$login_pri_ip
+                path: /opt/flight/cloudinit.in
+                permissions: '0644'
+                owner: root:root
+          params:
+            $key: { get_param: ssh-key }
+            $clustername: { get_param: clustername }
+            $sitename: { get_param: sitename }
+            $login_pri_ip: { get_param: login-pri-ip }
+            $pad: { get_attr: [ node-pad, value ] }
+
+  node-vol:
+    type: OS::Cinder::Volume
+    properties:
+      size: 16
+
+  node-volattach:
+    type: OS::Cinder::VolumeAttachment
+    properties:
+      volume_id: { get_resource: node-vol }
+      instance_uuid: { get_resource: node }

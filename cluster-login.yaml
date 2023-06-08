@@ -1,0 +1,112 @@
+heat_template_version: 2021-04-16
+parameters:
+  clustername:
+    type: string
+    label: Cluster Name
+    description: The name to give the cluster
+
+  sitename:
+    type: string
+    label: Site Name
+    description: The name to give the cluster
+
+  site-network:
+    type: string
+    label: Cluster network resource ID
+
+  site-network-pri:
+    type: string
+    label: Cluster network pri ID
+
+  site-sg:
+    type: string
+    label: Cluster network security group ID
+
+  ssh-key:
+    type: string
+    label: SSH Key for Access
+
+  solo-image:
+    type: string
+    label: Flight Solo Image ID
+
+  controller-pri-ip:
+    type: string
+    label: Controller Primary IP Address
+
+  login-pri-ip:
+    type: string
+    label: Login Primary IP Address
+
+  login-flavour:
+    type: string
+    label: Login node flavour
+
+  external-network:
+    type: string
+    label: External network
+
+resources:
+  login-pri-port:
+    type: OS::Neutron::Port
+    properties:
+      name: { list_join: ['-', ['login1', 'pri', { get_param: clustername }, { get_param: sitename }]] }
+      network: { get_param: site-network }
+      security_groups:
+        - { get_param: site-sg }
+      fixed_ips:
+        - subnet: { get_param: site-network-pri }
+          ip_address: { get_param: login-pri-ip }
+
+  login-node:
+    type: OS::Nova::Server
+    properties:
+      name: { list_join: ['.', ['login1', { get_param: clustername }, { get_param: sitename}, 'alces.network']] }
+      flavor: { get_param: login-flavour } 
+      admin_user: flight
+      networks:
+          - port: { get_resource: login-pri-port } 
+      block_device_mapping_v2:
+        - volume_id: { get_resource: login-vol }
+          boot_index: 0
+      user_data_format: RAW
+      user_data:
+        str_replace:
+          template: |
+            #cloud-config
+            fqdn: login1.$clustername.$sitename.alces.network
+            users:
+              - default
+              - name: flight
+                sudo: ALL=(ALL) NOPASSWD:ALL
+                ssh-authorized-keys:
+                  - $key
+            write_files:
+              - content: |
+                  SHAREPUBKEY=true
+                  SERVER=$controller_pri_ip
+                path: /opt/flight/cloudinit.in
+                permissions: '0644'
+                owner: root:root
+          params:
+            $key: { get_param: ssh-key }
+            $clustername: { get_param: clustername }
+            $sitename: { get_param: sitename }
+            $controller_pri_ip: { get_param: controller-pri-ip }
+
+  login-vol:
+    type: OS::Cinder::Volume
+    properties:
+      image: { get_param: solo-image }
+      size: 16
+
+  login-ip:
+     type: "OS::Neutron::FloatingIP"
+     properties:
+        floating_network_id: {get_param: external-network}
+        port_id: {get_resource: login-pri-port}
+
+outputs:
+  login_ext_ip:
+    description: Gateway External IP
+    value:  { get_attr: [login-ip, floating_ip_address] }
