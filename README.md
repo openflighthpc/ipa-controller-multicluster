@@ -32,6 +32,8 @@ The script `setup_scripts/ipa_server.sh` will do all the server configuration, *
 
 After the server is setup, the script `setup_scripts/ipa_add_cluster.sh` can be used to add the basic cluster information and a test user to the IPA server, **edit the variables to match your configuration first**.
 
+Once a cluster is added then the hosts can be added with `setup_scripts/ipa_add_host.sh`. **Edit the variables to match your configuration first**.
+
 ## IPA Client
 
 After doing the above, the script `setup_scripts/ipa_client.sh` will do all the client configuration. **Edit the variables to match your configuration first**.

@@ -19,4 +19,4 @@ search $DOMAIN $CLUSTER.$DOMAIN
 nameserver $CONTROLLER_IP
 EOF
 
-ipa-client-install --no-ntp --mkhomedir --ssh-trust-dns --force-join --realm="$REALM" --server="$CONTROLLER_IP" -w "$INSECURE_PASSWORD" --domain="$CLUSTER.$DOMAIN" --unattended --hostname="$NODENAME.$CLUSTER.$DOMAIN"
+ipa-client-install --no-ntp --mkhomedir --ssh-trust-dns --force-join --realm="$REALM" --server="$CONTROLLER_HOSTNAME.$DOMAIN" -w "$INSECURE_PASSWORD" --domain="$CLUSTER.$DOMAIN" --unattended --hostname="$NODENAME.$CLUSTER.$DOMAIN"
