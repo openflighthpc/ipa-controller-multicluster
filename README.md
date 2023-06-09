@@ -19,7 +19,7 @@ The site controller will have passwordless root SSH access to the login nodes of
     ```bash
     bash create-site.sh mysite
     ```
-- Create a cluster
+- Create a cluster (manually increment the `SUBNET_COUNT` in `sites/mysite.sh` for subsequent clusters) 
     ```bash
     bash create-cluster.sh mysite cluster1
     ```
