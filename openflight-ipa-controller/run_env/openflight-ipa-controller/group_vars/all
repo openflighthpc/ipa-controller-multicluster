@@ -7,7 +7,7 @@ domain: example.com
 secure_admin_password: MySecurePassword
 insecure_admin_password: MyInsecurePassword
 
-dns_forwarder=8.8.8.8
+dns_forwarder: 8.8.8.8
 
 # Do not touch under here
 controller_fqdn: "{{ controller_name }}.{{ site_name }}.{{ domain }}"
