@@ -39,10 +39,10 @@
     - 464/udp
 
 - name: Install IPA server
-  command: "ipa-server-install -a {{ secure_password }} --hostname {{ controller_fqdn }} --ip-address={{ controller_ip }} -r {{ realm }} -p {{ secure_password }} -n {{ site_name }}.{{ domain }} --no-ntp --setup-dns --forwarder={{ dns_forwarder }} --reverse-zone={{ reverse_zone }} --ssh-trust-dns --unattended"
+  command: "ipa-server-install -a {{ secure_admin_password }} --hostname {{ controller_fqdn }} --ip-address={{ controller_ip }} -r {{ realm }} -p {{ secure_admin_password }} -n {{ site_name }}.{{ domain }} --no-ntp --setup-dns --forwarder={{ dns_forwarder }} --reverse-zone={{ reverse_zone }} --ssh-trust-dns --unattended"
 
 - name: Authorise admin user
-  command: "echo '{{ secure_password }}' |kinit admin"
+  command: "echo '{{ secure_admin_password }}' |kinit admin"
 
 - name: Change HBAC rules
   command: "ipa hbacrule-disable allow_all"
