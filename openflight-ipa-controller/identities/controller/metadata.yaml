@@ -1,0 +1,3 @@
+name: controller
+description: Configure the site IPA Controller for managing user access to multiple clusters
+group_name: local

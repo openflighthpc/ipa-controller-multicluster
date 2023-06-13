@@ -1,0 +1,7 @@
+- name: Configure IPA Controller
+  hosts: all
+  remote_user: root
+  gather_facts: True
+  roles:
+    - ipa
+    - flightweb

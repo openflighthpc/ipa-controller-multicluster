@@ -1,0 +1,16 @@
+controller_ip: 10.100.0.100
+controller_name: controller1
+
+site_name: mysite
+domain: example.com
+
+secure_admin_password: MySecurePassword
+insecure_admin_password: MyInsecurePassword
+
+dns_forwarder=8.8.8.8
+
+# Do not touch under here
+controller_fqdn: "{{ controller_name }}.{{ site_name }}.{{ domain }}"
+realm: "{{ site_name | upper }}.{{ domain |upper }}"
+ip_split: "{{ controller_ip.split('.') }}"
+reverse_zone: "{{ ip_split.1 }}.{{ ip_split.0 }}.in-addr.arpa"

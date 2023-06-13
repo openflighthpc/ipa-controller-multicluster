@@ -1,0 +1,48 @@
+- name: Ensure hostname set correctly
+  hostname:
+    name: "{{ controller_fqdn }}"
+    use: systemd
+
+- name: Ensure self resolvable through /etc/hosts
+  blockinfile:
+    path: /etc/hosts
+    marker: "# {mark} OPENFLIGHT IPA HOST ENTRY - DO NOT TOUCH"
+    block: |
+      {{ controller_ip }}    {{ controller_fqdn }} {{ controller_name}}.{{ site_name }} {{ controller_name }}
+
+- name: Allow IPA services through firewall
+  firewalld:
+    zone: public
+    service: "{{ item }}"
+    state: enabled
+    permanent: yes
+  with_items:
+    - ldap
+    - ldaps
+    - kerberos
+    - kpasswd
+
+- name: Allow additional IPA ports through firewall 
+  firewalld:
+    zone: public
+    port: "{{ item }}"
+    state: enabled
+    permanent: yes
+  with_items: 
+    - 53/udp
+    - 53/tcp
+    - 389/tcp
+    - 636/tcp
+    - 88/tcp
+    - 88/udp
+    - 464/tcp
+    - 464/udp
+
+- name: Install IPA server
+  command: "ipa-server-install -a {{ secure_password }} --hostname {{ controller_fqdn }} --ip-address={{ controller_ip }} -r {{ realm }} -p {{ secure_password }} -n {{ site_name }}.{{ domain }} --no-ntp --setup-dns --forwarder={{ dns_forwarder }} --reverse-zone={{ reverse_zone }} --ssh-trust-dns --unattended"
+
+- name: Authorise admin user
+  command: "echo '{{ secure_password }}' |kinit admin"
+
+- name: Change HBAC rules
+  command: "ipa hbacrule-disable allow_all"

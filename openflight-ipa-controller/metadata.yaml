@@ -1,0 +1,56 @@
+---
+id: openflight-ipa-controller
+ame: 'Openflight IPA Controller'
+description: 'An IPA Controller for managing user access to multiple Flight Solo clusters'
+questions:
+  - id: controller_name
+    env: CONTROLLER_NAME
+    text: 'Controller name:'
+    default: controller1
+    validation:
+      type: string
+      format: "^[a-zA-Z0-9_\\-]+$"
+      message: 'Invalid controller name: %{value}. Must contain only alphanumeric characters,
+      - and _.'
+  - id: controller_ip
+    env: CONTROLLER_IP
+    text: 'Controller IP on interal network:'
+    default: 10.100.0.100
+    validation:
+      type: string
+  - id: site_name
+    env: SITENAME
+    text: 'Site name:'
+    default: mysite
+    validation:
+      type: string
+      format: "^[a-zA-Z0-9_\\-]+$"
+      message: 'Invalid site name: %{value}. Must contain only alphanumeric characters,
+      - and _.'
+  - id: domain
+    env: DOMAIN
+    text: 'Domain name:'
+    default: example.com
+    validation:
+      type: string
+      format: "^[a-zA-Z0-9_\\-]+$"
+      message: 'Invalid domain name: %{value}. Must contain only alphanumeric characters,
+      - and _.'
+  - id: secure_admin_password
+    env: SECURE_ADMIN_PASSWORD
+    text: 'Set IPA admin user password to:'
+    default: MySecurePass
+    validation:
+      type: string
+  - id: insecure_admin_password
+    env: INSECURE_ADMIN_PASSWORD
+    text: 'Set IPA host connection password to:'
+    default: HostInsecurePass
+    validation:
+      type: string
+  - id: dns_forwarder
+    env: DNS_FORWARDER
+    text: 'Forward DNS requests to:'
+    default: 8.8.8.8
+    validation:
+      type: string
