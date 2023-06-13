@@ -1,6 +1,6 @@
 ---
 id: openflight-ipa-controller
-ame: 'Openflight IPA Controller'
+name: 'Openflight IPA Controller'
 description: 'An IPA Controller for managing user access to multiple Flight Solo clusters'
 questions:
   - id: controller_name
