@@ -33,7 +33,7 @@ questions:
     default: example.com
     validation:
       type: string
-      format: "^[a-zA-Z0-9_\\-]+$"
+      format: "^[a-zA-Z0-9_\\-.]+$"
       message: 'Invalid domain name: %{value}. Must contain only alphanumeric characters,
       - and _.'
   - id: secure_admin_password
