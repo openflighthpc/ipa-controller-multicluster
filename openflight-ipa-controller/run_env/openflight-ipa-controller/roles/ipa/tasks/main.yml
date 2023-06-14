@@ -41,8 +41,34 @@
 - name: Install IPA server
   command: "ipa-server-install -a {{ secure_admin_password }} --hostname {{ controller_fqdn }} --ip-address={{ controller_ip }} -r {{ realm }} -p {{ secure_admin_password }} -n {{ site_name }}.{{ domain }} --no-ntp --setup-dns --forwarder={{ dns_forwarder }} --reverse-zone={{ reverse_zone }} --ssh-trust-dns --unattended"
 
-- name: Authorise admin user
-  command: "echo '{{ secure_admin_password }}' |kinit admin"
+- name: Set HBAC rules
+  command: "echo '{{ secure_admin_password }}' |kinit admin ; ipa hbacrule-disable allow_all"
 
-- name: Change HBAC rules
-  command: "ipa hbacrule-disable allow_all"
+- name: Create bin directory if not exists
+  file:
+    path: /root/bin/
+    state: directory
+    owner: root
+    group: root
+
+- name: Create SSH key for cluster test users
+  openssh_keypair:
+    path: "~/.ssh/id_ipatestuser"
+    type: rsa
+    size: 4096
+    state: present
+    force: no
+
+- name: Read SSH pub key for cluster test users
+  set_fact:
+    cluster_test_user_pub_key: "{{lookup('file', '~/.ssh/id_ipatestuser.pub') }}"
+
+- name: Install command for adding cluster to IPA
+  template: 
+    src: ipa-add-cluster.sh
+    dest: /root/bin/ipa-add-cluster
+
+- name: Install host-add script
+  template:
+    src: ipa-add-host.sh
+    dest: /root/bin/ipa-add-host
