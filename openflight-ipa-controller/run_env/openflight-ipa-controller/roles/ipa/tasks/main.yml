@@ -16,6 +16,7 @@
     service: "{{ item }}"
     state: enabled
     permanent: yes
+    immediate: true
   with_items:
     - ldap
     - ldaps
@@ -28,6 +29,7 @@
     port: "{{ item }}"
     state: enabled
     permanent: yes
+    immediate: true
   with_items: 
     - 53/udp
     - 53/tcp
