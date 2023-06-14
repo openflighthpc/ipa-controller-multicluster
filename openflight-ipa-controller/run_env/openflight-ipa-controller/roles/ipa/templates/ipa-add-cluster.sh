@@ -34,4 +34,4 @@ ipa group-add-member ${CLUSTER}-users --users ${CLUSTER}-testuser
 echo
 echo "==== NEXT STEPS ===="
 echo "You will need to add the cluster hosts to the hostgroup:"
-echo "  ipa_add_host newhost.$CLUSTER.$DOMAIN"
+echo "  ipa-add-host newhost.$CLUSTER.$DOMAIN"
