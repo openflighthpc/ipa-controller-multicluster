@@ -44,7 +44,10 @@
   command: "ipa-server-install -a {{ secure_admin_password }} --hostname {{ controller_fqdn }} --ip-address={{ controller_ip }} -r {{ realm }} -p {{ secure_admin_password }} -n {{ site_name }}.{{ domain }} --no-ntp --setup-dns --forwarder={{ dns_forwarder }} --reverse-zone={{ reverse_zone }} --ssh-trust-dns --unattended"
 
 - name: Set HBAC rules
-  command: "echo '{{ secure_admin_password }}' |kinit admin ; ipa hbacrule-disable allow_all"
+  ipa_hbacrule:
+    name: allow_all
+    state: disabled
+    ipa_pass: "{{ secure_admin_password }}"
 
 - name: Create bin directory if not exists
   file:
